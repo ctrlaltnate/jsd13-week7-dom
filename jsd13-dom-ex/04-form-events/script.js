@@ -21,8 +21,8 @@ nameInput.addEventListener('input', function(event){
 //   - if it's empty, set feedback's textContent to "Name required"
 //   - otherwise, set feedback's textContent to `Welcome, ${name}!`
 
-signupForm.addEventListener('submit', function(event){
-    event.preventDefault();
+signupForm.addEventListener('submit', (e)=> {
+    e.preventDefault();
     const name = nameInput.value.trim();
     if(name === ""){
         feedBack.textContent = "Name required";

@@ -26,9 +26,18 @@ function updateCount(){
 //   - call updateCount()
 addItemBtn.addEventListener('click', function(event){
     const item = itemInput.value.trim();
-    if (item === "") {
+    if (item) {
+        const li = document.createElement('li');
+        li.textContent = item;
 
-    } else {
-        
-    }
+        li.addEventListener('click', ()=>{
+            li.remove();
+            updateCount();
+        })
+
+        items.prepend(li);
+
+        itemInput.value='';
+        updateCount();
+    } 
 })
