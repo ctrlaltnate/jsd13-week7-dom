@@ -30,7 +30,8 @@ console.log(cardid.className);
 // TODO 5: #card starts with a data-visits="0" attribute. Read the current
 // value with card.dataset.visits, convert it to a number, add 1, write it
 // back to card.dataset.visits, and console.log() the new value.
-let newVisits = Number(cardid.dataset.visits);
-cardid.dataset.visits = newVisits +1;
-console.log(cardid.dataset.visits)
+let newVisits = Number(card.dataset.visits);
+newVisits = newVisits + 1; // หรือ newVisits += 1;
+card.dataset.visits = newVisits;
+console.log(newVisits);
 
