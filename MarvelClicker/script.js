@@ -14,10 +14,6 @@ let clickCount = 0;
 let leaderBoardData = [];
 let saveScoreTimer;
 
-while (!playerName) {
-  playerName = prompt("กรุณากรอกชื่อผู้เล่น")?.trim();
-}
-
 const unsnapImage = document.createElement("img");
 unsnapImage.id = "gauntlet-image";
 unsnapImage.src = "assets/unsnap.png";
@@ -26,10 +22,9 @@ unsnapImage.width = 400;
 unsnapImage.draggable = false;
 snapArea.append(unsnapImage);
 
-// ป้องกันการกดก่อนที่คะแนนเดิมจะโหลดจาก Supabase เสร็จ
+// Prevent clicks until the saved player score has loaded.
 unsnapImage.style.pointerEvents = "none";
 unsnapImage.style.opacity = "0.6";
-updateProfileInfo();
 
 unsnapImage.addEventListener("pointerdown", (event) => {
   unsnapImage.setPointerCapture(event.pointerId);
@@ -122,7 +117,7 @@ async function updateLeaderBoard(name, score) {
     );
 
   if (error) {
-    console.error("บันทึกคะแนนไม่สำเร็จ:", error);
+    console.error("Could not save score:", error);
     return;
   }
 
@@ -136,7 +131,7 @@ async function loadLeaderBoard() {
     .order("score", { ascending: false });
 
   if (error) {
-    console.error("โหลด Leaderboard ไม่สำเร็จ:", error);
+    console.error("Could not load leaderboard:", error);
     return;
   }
 
@@ -152,7 +147,7 @@ async function loadPlayerScore() {
     .maybeSingle();
 
   if (error) {
-    console.error("โหลดคะแนนผู้เล่นไม่สำเร็จ:", error);
+    console.error("Could not load player score:", error);
     return;
   }
 
@@ -188,10 +183,64 @@ function updateProfileInfo() {
     `${playerName} was snapped! Total removed: ${clickCount}`;
 }
 
+function getCookie(cookieName) {
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${cookieName}=`));
+
+  return cookie ? decodeURIComponent(cookie.split("=")[1]) : "";
+}
+
+function setCookie(cookieName, value, days) {
+  const maxAge = days * 24 * 60 * 60;
+
+  document.cookie =
+    `${cookieName}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; SameSite=Lax`;
+}
+
+async function choosePlayerName() {
+  const savedPlayerName = getCookie("playerName");
+
+  if (savedPlayerName) {
+    playerName = savedPlayerName;
+    return;
+  }
+
+  while (!playerName) {
+    const newPlayerName = prompt("Enter your player name")?.trim();
+
+    if (!newPlayerName) {
+      continue;
+    }
+
+    const { error } = await supabaseClient
+      .from("leaderboard")
+      .insert({ name: newPlayerName, score: 0 });
+
+    if (error?.code === "23505") {
+      alert("This name is already in use. Please choose another name.");
+      continue;
+    }
+
+    if (error) {
+      console.error("Could not create player:", error);
+      alert("Could not create player. Please try again.");
+      continue;
+    }
+
+    playerName = newPlayerName;
+    setCookie("playerName", playerName, 365);
+  }
+}
+
 async function initializeGame() {
+  await choosePlayerName();
+  updateProfileInfo();
   await loadPlayerScore();
   await loadLeaderBoard();
 
   unsnapImage.style.pointerEvents = "auto";
+  unsnapImage.style.opacity = "1";
 }
+
 initializeGame();
