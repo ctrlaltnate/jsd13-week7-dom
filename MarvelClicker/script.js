@@ -6,7 +6,7 @@ let playerName = localStorage.getItem("playerName");
 let clickCount = Number(localStorage.getItem("clickCount")) || 0;
 
 let leaderBoardData =
-  JSON.parse(localStorage.getItem("leaderBoardData")) || [];
+JSON.parse(localStorage.getItem("leaderBoardData")) || [];
 renderLeaderBoard();
 while (!playerName) {
   playerName = prompt("กรุณากรอกชื่อผู้เล่น")?.trim();
@@ -24,21 +24,33 @@ unsnapImage.width = 400;
 snapArea.append(unsnapImage);
 profileInfo.textContent = `${playerName} was snapped! Total removed: ${clickCount}`;
 
+
+const supabaseUrl = "https://uxdangdsxwouuwuhoats.supabase.co";
+const supabasePublishableKey = "sb_publishable_hWYaoG0l00KOREynZH8Idg_-lo_oovs";
+
+const supabaseClient = supabase.createClient(
+  supabaseUrl,
+  supabasePublishableKey
+);
+
+
 unsnapImage.addEventListener("pointerdown", (event) => {
   unsnapImage.setPointerCapture(event.pointerId);
   unsnapImage.draggable = false;
   unsnapImage.src = "assets/snap.png";
   unsnapImage.alt = "Snap";
   unsnapImage.width = 430;
+  snapArea.style.backgroundColor ="#ac6701";
 });
 
 unsnapImage.addEventListener("pointerup", (e) => {
   unsnapImage.src = "assets/unsnap.png";
   unsnapImage.alt = "Unsnap";
   unsnapImage.width = 400;
-
+  snapArea.style.backgroundColor ="#1b1b1b";
   clickCount += 1;
   localStorage.setItem("clickCount", clickCount);
+  saveScoreToSupabase();
   updateLeaderBoard(playerName, clickCount);
   snapBubble(e);
   profileInfo.textContent =
@@ -125,7 +137,6 @@ function renderLeaderBoard() {
     playerNameElement.textContent = `${index + 1}. ${player.name}`;
     playerScoreElement.textContent = player.score;
 
-    // จัดชื่ออยู่ซ้ายและคะแนนอยู่ขวา
     playerRow.style.display = "flex";
     playerRow.style.justifyContent = "space-between";
     playerRow.style.alignItems = "center";
@@ -136,4 +147,37 @@ function renderLeaderBoard() {
     playerRow.append(playerNameElement, playerScoreElement);
     leaderBoard.append(playerRow);
   });
+}
+
+async function testSupabaseConnection() {
+  const { data, error } = await supabaseClient
+    .from("leaderboard")
+    .select("*");
+
+  console.log("data:", data);
+  console.log("error:", error);
+}
+
+testSupabaseConnection();
+
+async function saveScoreToSupabase() {
+  const { error } = await supabaseClient
+    .from("leaderboard")
+    .upsert(
+      {
+        name: playerName,
+        score: clickCount,
+        updated_at: new Date().toISOString()
+      },
+      {
+        onConflict: "name"
+      }
+    );
+
+  if (error) {
+    console.error("บันทึกคะแนนไม่สำเร็จ:", error);
+    return;
+  }
+
+  console.log("บันทึกคะแนนสำเร็จ");
 }
