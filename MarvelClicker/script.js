@@ -1,18 +1,15 @@
 const leaderBoard = document.querySelector("#leaderboard");
 const snapArea = document.querySelector("#snaparea");
 const profileInfo = document.querySelector("#profileinfo");
-
-const supabaseUrl = "https://uxdangdsxwouuwuhoats.supabase.co";
-const supabasePublishableKey = "sb_publishable_hWYaoG0l00KOREynZH8Idg_-lo_oovs";
-const supabaseClient = supabase.createClient(
-  supabaseUrl,
-  supabasePublishableKey
-);
+const loadingScreen = document.querySelector("#loading-screen");
+const loadingMessage = document.querySelector("#loading-message");
+const retryButton = document.querySelector("#retry-button");
 
 let playerName = "";
 let clickCount = 0;
 let leaderBoardData = [];
 let saveScoreTimer;
+let retryAction = null;
 
 const unsnapImage = document.createElement("img");
 unsnapImage.id = "gauntlet-image";
@@ -21,10 +18,11 @@ unsnapImage.alt = "Unsnap";
 unsnapImage.width = 400;
 unsnapImage.draggable = false;
 snapArea.append(unsnapImage);
+disableGame();
 
-// Prevent clicks until the saved player score has loaded.
-unsnapImage.style.pointerEvents = "none";
-unsnapImage.style.opacity = "0.6";
+retryButton.addEventListener("click", () => {
+  retryAction?.();
+});
 
 unsnapImage.addEventListener("pointerdown", (event) => {
   unsnapImage.setPointerCapture(event.pointerId);
@@ -105,53 +103,38 @@ function updateCurrentPlayerInLeaderBoard() {
 }
 
 async function updateLeaderBoard(name, score) {
-  const { error } = await supabaseClient
-    .from("leaderboard")
-    .upsert(
-      {
-        name,
-        score,
-        updated_at: new Date().toISOString()
+  try {
+    await requestApi("/api/leaderboard", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
-      { onConflict: "name" }
-    );
+      body: JSON.stringify({ action: "save-score", name, score })
+    });
 
-  if (error) {
+    hideLoadingScreen();
+  } catch (error) {
     console.error("Could not save score:", error);
-    return;
+    showLoadingScreen(
+      "Could not save your score. Check your connection.",
+      () => updateLeaderBoard(playerName, clickCount)
+    );
   }
-
-  await loadLeaderBoard();
 }
 
 async function loadLeaderBoard() {
-  const { data, error } = await supabaseClient
-    .from("leaderboard")
-    .select("name, score")
-    .order("score", { ascending: false });
+  const result = await requestApi("/api/leaderboard");
 
-  if (error) {
-    console.error("Could not load leaderboard:", error);
-    return;
-  }
-
-  leaderBoardData = data;
+  leaderBoardData = result.data;
   renderLeaderBoard();
 }
 
-async function loadPlayerScore() {
-  const { data, error } = await supabaseClient
-    .from("leaderboard")
-    .select("score")
-    .eq("name", playerName)
-    .maybeSingle();
+function loadPlayerScore() {
+  const currentPlayer = leaderBoardData.find(
+    (player) => player.name === playerName
+  );
 
-  if (error) {
-    console.error("Could not load player score:", error);
-    return;
-  }
-
-  clickCount = data?.score || 0;
+  clickCount = currentPlayer?.score || 0;
   updateProfileInfo();
 }
 
@@ -181,6 +164,39 @@ function renderLeaderBoard() {
 function updateProfileInfo() {
   profileInfo.textContent =
     `${playerName} was snapped! Total removed: ${clickCount}`;
+}
+
+async function requestApi(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    const result = await readApiResponse(response);
+
+    if (!response.ok) {
+      const error = new Error(result.error || "Request failed");
+      error.status = response.status;
+      throw error;
+    }
+
+    return result;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function readApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  return { error: await response.text() };
 }
 
 function getCookie(cookieName) {
@@ -213,19 +229,21 @@ async function choosePlayerName() {
       continue;
     }
 
-    const { error } = await supabaseClient
-      .from("leaderboard")
-      .insert({ name: newPlayerName, score: 0 });
+    try {
+      await requestApi("/api/leaderboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ action: "register", name: newPlayerName })
+      });
+    } catch (error) {
+      if (error.status === 409) {
+        alert("This name is already in use. Please choose another name.");
+        continue;
+      }
 
-    if (error?.code === "23505") {
-      alert("This name is already in use. Please choose another name.");
-      continue;
-    }
-
-    if (error) {
-      console.error("Could not create player:", error);
-      alert("Could not create player. Please try again.");
-      continue;
+      throw error;
     }
 
     playerName = newPlayerName;
@@ -233,14 +251,46 @@ async function choosePlayerName() {
   }
 }
 
-async function initializeGame() {
-  await choosePlayerName();
-  updateProfileInfo();
-  await loadPlayerScore();
-  await loadLeaderBoard();
+function disableGame() {
+  unsnapImage.style.pointerEvents = "none";
+  unsnapImage.style.opacity = "0.6";
+}
 
+function enableGame() {
   unsnapImage.style.pointerEvents = "auto";
   unsnapImage.style.opacity = "1";
+}
+
+function showLoadingScreen(message, action = null) {
+  loadingScreen.hidden = false;
+  loadingMessage.textContent = message;
+  retryAction = action;
+  retryButton.hidden = action === null;
+}
+
+function hideLoadingScreen() {
+  loadingScreen.hidden = true;
+  retryAction = null;
+}
+
+async function initializeGame() {
+  showLoadingScreen("Connecting to database...");
+  disableGame();
+
+  try {
+    await choosePlayerName();
+    updateProfileInfo();
+    await loadLeaderBoard();
+    loadPlayerScore();
+    enableGame();
+    hideLoadingScreen();
+  } catch (error) {
+    console.error("Could not start game:", error);
+    showLoadingScreen(
+      "Cannot connect to database. Please try again.",
+      initializeGame
+    );
+  }
 }
 
 initializeGame();
