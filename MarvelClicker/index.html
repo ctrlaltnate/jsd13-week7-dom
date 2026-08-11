@@ -18,10 +18,11 @@
 
     body {
       font-family: 'Bebas Neue', sans-serif;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       padding: 20px;
+      overflow: hidden;
       background-color: #1b1b1b;
       color: white;
     }
@@ -41,27 +42,27 @@
 
     #main-content {
       flex: 1;
+      min-height: 0;
       width: 100%;
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 2fr 3fr 2fr;
+      gap: 20px;
       align-items: stretch;
       margin-top: 20px;
     }
 
-    #sidebar-left {
-      width: 35%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #sidebar-right {
-      width: 63%;
+    #sidebar-left,
+    #sidebar-center,
+    #sidebar-shop {
+      min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
     }
 
     #leaderboard,
-    #snaparea {
+    #snaparea,
+    #shop {
       flex: 1;
       border: 2px solid #333333;
       border-top: 0;
@@ -69,16 +70,120 @@
       padding: 20px;
     }
 
-#leaderboard {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 10px;
+    #leaderboard {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 10px;
+      min-height: 0;
+      overflow-y: auto;
+    }
 
-  height: calc(100vh - 180px);
-  min-height: 0;
-  overflow-y: auto;
-}
+    #shop {
+      display: flex;
+      min-height: 0;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .leaderboard-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      border-bottom: 1px solid #ebebeb;
+      font-size: 2.3em;
+    }
+
+    #profileinfo {
+      display: flex;
+      min-height: 82px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.05;
+    }
+
+    .profile-primary {
+      font-size: 1em;
+    }
+
+    .profile-secondary {
+      margin-top: 5px;
+      color: #ffcc00;
+      font-size: 0.65em;
+    }
+
+    .boost-status {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #cc0000;
+      text-align: center;
+      font-size: 1.3rem;
+      letter-spacing: 1px;
+    }
+
+    .shop-card {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto auto auto;
+      column-gap: 12px;
+      align-content: center;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid #555;
+      border-radius: 12px;
+      background: #272727;
+    }
+
+    .shop-card.owned {
+      border-color: #d4af37;
+      background: #352f1d;
+    }
+
+    .shop-card h3 {
+      color: #ffcc00;
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+    }
+
+    .shop-card p {
+      margin-top: 5px;
+      font-family: Arial, sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .shop-price {
+      color: #ffcc00;
+      font-weight: 700;
+    }
+
+    .shop-buy-button {
+      grid-column: 2;
+      grid-row: 1 / 4;
+      min-width: 70px;
+      padding: 9px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #cc0000;
+      color: white;
+      font: inherit;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .shop-buy-button:disabled {
+      background: #555;
+      color: #bbb;
+      cursor: not-allowed;
+    }
 
     #snaparea {
       position: relative;
@@ -222,28 +327,45 @@
     }
 
     @media (max-width: 1000px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+
       #main-content {
         flex: none;
+        display: flex;
         flex-direction: column;
         gap: 20px;
       }
 
       #sidebar-left,
-      #sidebar-right {
+      #sidebar-center,
+      #sidebar-shop {
         width: 100%;
         max-width: 100%;
       }
 
-  #leaderboard {
-    height: auto;
-    max-height: 30vh;
-    overflow-y: auto;
-  }
+      #leaderboard {
+        height: auto;
+        max-height: 45vh;
+        overflow-y: auto;
+      }
 
-  #snaparea {
-    flex: none;
-    height: auto;
-  }
+      #shop {
+        height: auto;
+        overflow: visible;
+      }
+
+      .shop-card {
+        flex: none;
+      }
+
+      #snaparea {
+        flex: none;
+        height: auto;
+      }
     }
   </style>
 
@@ -263,10 +385,14 @@
       <h2>Leaderboard</h2>
       <div id="leaderboard"></div>
     </div>
-    <div id="sidebar-right">
+    <div id="sidebar-center">
       <h2 id="profileinfo"></h2>
       <div id="snaparea"></div>
     </div>
+    <aside id="sidebar-shop">
+      <h2>Shop</h2>
+      <div id="shop"></div>
+    </aside>
   </main>
   <script src="script.js"></script>
 </body>
