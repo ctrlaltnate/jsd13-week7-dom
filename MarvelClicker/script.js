@@ -47,6 +47,7 @@ unsnapImage.addEventListener("pointerup", (event) => {
 
   clickCount += 1;
   updateProfileInfo();
+  updateCurrentPlayerInLeaderBoard();
   queueLeaderBoardUpdate();
   snapBubble(event);
 });
@@ -88,6 +89,24 @@ function queueLeaderBoardUpdate() {
   saveScoreTimer = setTimeout(() => {
     updateLeaderBoard(playerName, clickCount);
   }, 500);
+}
+
+function updateCurrentPlayerInLeaderBoard() {
+  const currentPlayer = leaderBoardData.find(
+    (player) => player.name === playerName
+  );
+
+  if (currentPlayer) {
+    currentPlayer.score = clickCount;
+  } else {
+    leaderBoardData.push({ name: playerName, score: clickCount });
+  }
+
+  leaderBoardData.sort((firstPlayer, secondPlayer) => {
+    return secondPlayer.score - firstPlayer.score;
+  });
+
+  renderLeaderBoard();
 }
 
 async function updateLeaderBoard(name, score) {
@@ -174,6 +193,5 @@ async function initializeGame() {
   await loadLeaderBoard();
 
   unsnapImage.style.pointerEvents = "auto";
-  unsnapImage.style.opacity = "1";
 }
 initializeGame();
