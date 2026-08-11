@@ -108,7 +108,7 @@ async function findPokemon() {
             colorType = '#A6B91A';
             break;
         case 'rock':
-            colorType = '#B6A136';
+            colorType = '#584d16';
             break;
         case 'ghost':
             colorType = '#735797';
@@ -117,7 +117,7 @@ async function findPokemon() {
             colorType = '#6F35FC';
             break;
         case 'dark':
-            colorType = '#705746';
+            colorType = '#1d1917';
             break;
         case 'steel':
             colorType = '#B7B7CE';

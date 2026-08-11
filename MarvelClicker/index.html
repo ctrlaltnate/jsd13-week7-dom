@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SnapClicker</title>
 
-    <style>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarvelClicker</title>
+
+  <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitcount+Prop+Double:wght@100..900&display=swap');
 
     * {
@@ -13,6 +14,7 @@
       padding: 0;
       margin: 0;
     }
+
     body {
       font-family: 'Bebas Neue', sans-serif;
       min-height: 100vh;
@@ -20,6 +22,7 @@
       flex-direction: column;
       padding: 20px;
       background-color: #1b1b1b;
+      color: white;
     }
 
     #top-bar {
@@ -34,35 +37,136 @@
       color: white;
       box-shadow: 0 8px 14px #520303;
     }
+
     #main-content {
+      flex: 1;
       width: 100%;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: stretch;
       margin-top: 20px;
-
     }
 
     #sidebar-left {
       width: 35%;
-     /* border: 2px solid #000000;*/
+      display: flex;
+      flex-direction: column;
     }
 
     #sidebar-right {
       width: 63%;
-      /*border: 2px solid #000000;*/
+      display: flex;
+      flex-direction: column;
     }
-    h2{
+
+    #leaderboard,
+    #snaparea {
+      flex: 1;
+      border: 2px solid #333333;
+      border-top: 0;
+      border-radius: 0 0 18px 18px;
+      padding: 20px;
+    }
+
+#leaderboard {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+
+  height: calc(100vh - 180px);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+    #snaparea {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    #gauntlet-image {
+      max-width: 100%;
+      height: auto;
+      cursor: pointer;
+    }
+
+    .snap-bubble {
+      position: absolute;
+      z-index: 10;
+      color: #ffcc00;
+      font-family: "Bitcount Prop Double", sans-serif;
+      font-size: 3rem;
+      font-weight: 700;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      text-shadow: 2px 2px 0 #cc0000;
+      animation: bubble-float 1.5s ease-out forwards;
+    }
+
+    @keyframes bubble-float {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) translateY(0) scale(0.5);
+      }
+
+      30% {
+        transform: translate(-50%, -50%) translateY(-20px) scale(1.3);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(-120px) scale(1);
+      }
+    }
+
+    .snapping-effect {
+      position: absolute;
+      z-index: 5;
+      width: 80px;
+      pointer-events: none;
+
+      animation: snapping-pop 1s ease-out forwards;
+    }
+
+    @keyframes snapping-pop {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
+      }
+
+      25% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.25);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.5);
+      }
+    }
+
+
+    h2 {
       border-radius: 12px;
       padding: 15px 20px;
-      
+      font-size: 2.2em;
       background-color: #333333;
       color: rgb(255, 255, 255);
       border-radius: 18px 18px 0 0;
+      letter-spacing: 2px;
     }
 
     @media (max-width: 1000px) {
       #main-content {
+        flex: none;
         flex-direction: column;
         gap: 20px;
       }
@@ -72,16 +176,35 @@
         width: 100%;
         max-width: 100%;
       }
+
+  #leaderboard {
+    height: auto;
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+
+  #snaparea {
+    flex: none;
+    height: auto;
+  }
     }
   </style>
 
 </head>
+
 <body>
-  <div id="top-bar">SnapClicker</div>
+  <div id="top-bar">MarvelClicker</div>
   <main id="main-content">
-    <div id="sidebar-left"><h2>Leaderboard</h2></div>
-    <div id="sidebar-right"><h2>Game</h2></div>
+    <div id="sidebar-left">
+      <h2>Leaderboard</h2>
+      <div id="leaderboard"></div>
+    </div>
+    <div id="sidebar-right">
+      <h2 id="profileinfo"></h2>
+      <div id="snaparea"></div>
+    </div>
   </main>
-    
+  <script src="script.js"></script>
 </body>
+
 </html>
