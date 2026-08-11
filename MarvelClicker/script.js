@@ -1,19 +1,21 @@
 const leaderBoard = document.querySelector("#leaderboard");
 const snapArea = document.querySelector("#snaparea");
 const profileInfo = document.querySelector("#profileinfo");
-//NatelocalStorage.clear();
-let playerName = localStorage.getItem("playerName");
-let clickCount = Number(localStorage.getItem("clickCount")) || 0;
 
-let leaderBoardData =
-JSON.parse(localStorage.getItem("leaderBoardData")) || [];
-renderLeaderBoard();
+const supabaseUrl = "https://uxdangdsxwouuwuhoats.supabase.co";
+const supabasePublishableKey = "sb_publishable_hWYaoG0l00KOREynZH8Idg_-lo_oovs";
+const supabaseClient = supabase.createClient(
+  supabaseUrl,
+  supabasePublishableKey
+);
+
+let playerName = "";
+let clickCount = 0;
+let leaderBoardData = [];
+let saveScoreTimer;
+
 while (!playerName) {
   playerName = prompt("กรุณากรอกชื่อผู้เล่น")?.trim();
-
-  if (playerName) {
-    localStorage.setItem("playerName", playerName);
-  }
 }
 
 const unsnapImage = document.createElement("img");
@@ -21,109 +23,122 @@ unsnapImage.id = "gauntlet-image";
 unsnapImage.src = "assets/unsnap.png";
 unsnapImage.alt = "Unsnap";
 unsnapImage.width = 400;
+unsnapImage.draggable = false;
 snapArea.append(unsnapImage);
-profileInfo.textContent = `${playerName} was snapped! Total removed: ${clickCount}`;
 
-
-const supabaseUrl = "https://uxdangdsxwouuwuhoats.supabase.co";
-const supabasePublishableKey = "sb_publishable_hWYaoG0l00KOREynZH8Idg_-lo_oovs";
-
-const supabaseClient = supabase.createClient(
-  supabaseUrl,
-  supabasePublishableKey
-);
-
+// ป้องกันการกดก่อนที่คะแนนเดิมจะโหลดจาก Supabase เสร็จ
+unsnapImage.style.pointerEvents = "none";
+unsnapImage.style.opacity = "0.6";
+updateProfileInfo();
 
 unsnapImage.addEventListener("pointerdown", (event) => {
   unsnapImage.setPointerCapture(event.pointerId);
-  unsnapImage.draggable = false;
   unsnapImage.src = "assets/snap.png";
   unsnapImage.alt = "Snap";
   unsnapImage.width = 430;
-  snapArea.style.backgroundColor ="#ac6701";
+  snapArea.style.backgroundColor = "#ac6701";
 });
 
-unsnapImage.addEventListener("pointerup", (e) => {
+unsnapImage.addEventListener("pointerup", (event) => {
   unsnapImage.src = "assets/unsnap.png";
   unsnapImage.alt = "Unsnap";
   unsnapImage.width = 400;
-  snapArea.style.backgroundColor ="#1b1b1b";
+  snapArea.style.backgroundColor = "#1b1b1b";
+
   clickCount += 1;
-  localStorage.setItem("clickCount", clickCount);
-  saveScoreToSupabase();
-  updateLeaderBoard(playerName, clickCount);
-  snapBubble(e);
-  profileInfo.textContent =
-    `${playerName} was snapped! Total removed: ${clickCount}`;
+  updateProfileInfo();
+  queueLeaderBoardUpdate();
+  snapBubble(event);
 });
 
 unsnapImage.addEventListener("pointercancel", () => {
   unsnapImage.src = "assets/unsnap.png";
   unsnapImage.alt = "Unsnap";
   unsnapImage.width = 400;
+  snapArea.style.backgroundColor = "#1b1b1b";
 });
 
-
-function snapBubble(e) {
+function snapBubble(event) {
   const snapAreaRect = snapArea.getBoundingClientRect();
-
-  const clickX = e.clientX - snapAreaRect.left;
-  const clickY = e.clientY - snapAreaRect.top;
-
+  const clickX = event.clientX - snapAreaRect.left;
+  const clickY = event.clientY - snapAreaRect.top;
 
   const bubble = document.createElement("div");
-
   bubble.classList.add("snap-bubble");
   bubble.textContent = "+1";
   bubble.style.left = `${clickX}px`;
   bubble.style.top = `${clickY}px`;
-
   snapArea.append(bubble);
 
- 
   const snappingEffect = document.createElement("img");
-
   snappingEffect.classList.add("snapping-effect");
   snappingEffect.src = "assets/snapping.png";
   snappingEffect.alt = "";
   snappingEffect.style.left = `${clickX}px`;
   snappingEffect.style.top = `${clickY}px`;
-
   snapArea.append(snappingEffect);
 
-
-  bubble.addEventListener("animationend", () => {
-    bubble.remove();
-  });
-
-  snappingEffect.addEventListener("animationend", () => {
-    snappingEffect.remove();
-  });
+  bubble.addEventListener("animationend", () => bubble.remove());
+  snappingEffect.addEventListener("animationend", () => snappingEffect.remove());
 }
 
+function queueLeaderBoardUpdate() {
+  clearTimeout(saveScoreTimer);
 
-function updateLeaderBoard(name, score) {
-  const player = leaderBoardData.find((item) => {
-    return item.name === name;
-  });
+  saveScoreTimer = setTimeout(() => {
+    updateLeaderBoard(playerName, clickCount);
+  }, 500);
+}
 
-  if (player) {
-    player.score = score;
-  } else {
-    leaderBoardData.push({
-      name: name,
-      score: score
-    });
+async function updateLeaderBoard(name, score) {
+  const { error } = await supabaseClient
+    .from("leaderboard")
+    .upsert(
+      {
+        name,
+        score,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "name" }
+    );
+
+  if (error) {
+    console.error("บันทึกคะแนนไม่สำเร็จ:", error);
+    return;
   }
 
-  leaderBoardData.sort((a, b) => b.score - a.score);
+  await loadLeaderBoard();
+}
 
-  localStorage.setItem(
-    "leaderBoardData",
-    JSON.stringify(leaderBoardData)
-  );
+async function loadLeaderBoard() {
+  const { data, error } = await supabaseClient
+    .from("leaderboard")
+    .select("name, score")
+    .order("score", { ascending: false });
 
+  if (error) {
+    console.error("โหลด Leaderboard ไม่สำเร็จ:", error);
+    return;
+  }
+
+  leaderBoardData = data;
   renderLeaderBoard();
+}
+
+async function loadPlayerScore() {
+  const { data, error } = await supabaseClient
+    .from("leaderboard")
+    .select("score")
+    .eq("name", playerName)
+    .maybeSingle();
+
+  if (error) {
+    console.error("โหลดคะแนนผู้เล่นไม่สำเร็จ:", error);
+    return;
+  }
+
+  clickCount = data?.score || 0;
+  updateProfileInfo();
 }
 
 function renderLeaderBoard() {
@@ -149,35 +164,16 @@ function renderLeaderBoard() {
   });
 }
 
-async function testSupabaseConnection() {
-  const { data, error } = await supabaseClient
-    .from("leaderboard")
-    .select("*");
-
-  console.log("data:", data);
-  console.log("error:", error);
+function updateProfileInfo() {
+  profileInfo.textContent =
+    `${playerName} was snapped! Total removed: ${clickCount}`;
 }
 
-testSupabaseConnection();
+async function initializeGame() {
+  await loadPlayerScore();
+  await loadLeaderBoard();
 
-async function saveScoreToSupabase() {
-  const { error } = await supabaseClient
-    .from("leaderboard")
-    .upsert(
-      {
-        name: playerName,
-        score: clickCount,
-        updated_at: new Date().toISOString()
-      },
-      {
-        onConflict: "name"
-      }
-    );
-
-  if (error) {
-    console.error("บันทึกคะแนนไม่สำเร็จ:", error);
-    return;
-  }
-
-  console.log("บันทึกคะแนนสำเร็จ");
+  unsnapImage.style.pointerEvents = "auto";
+  unsnapImage.style.opacity = "1";
 }
+initializeGame();
