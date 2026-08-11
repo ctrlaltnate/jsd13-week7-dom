@@ -4,8 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapClicker</title>
+
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitcount+Prop+Double:wght@100..900&display=swap');
+
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+    }
+    body {
+      font-family: 'Bebas Neue', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background-color: #1b1b1b;
+    }
+
+    #top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: white;
+      text-align: center;
+      font-size: 4rem;
+      background-color: #cc0000;
+      border-radius: 18px;
+      color: white;
+      box-shadow: 0 8px 14px #520303;
+    }
+    #main-content {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 20px;
+
+    }
+
+    #sidebar-left {
+      width: 35%;
+     /* border: 2px solid #000000;*/
+    }
+
+    #sidebar-right {
+      width: 63%;
+      /*border: 2px solid #000000;*/
+    }
+    h2{
+      border-radius: 12px;
+      padding: 15px 20px;
+      
+      background-color: #333333;
+      color: rgb(255, 255, 255);
+      border-radius: 18px 18px 0 0;
+    }
+
+    @media (max-width: 1000px) {
+      #main-content {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      #sidebar-left,
+      #sidebar-right {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  </style>
+
 </head>
 <body>
+  <div id="top-bar">SnapClicker</div>
+  <main id="main-content">
+    <div id="sidebar-left"><h2>Leaderboard</h2></div>
+    <div id="sidebar-right"><h2>Game</h2></div>
+  </main>
     
 </body>
 </html>
