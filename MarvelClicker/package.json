@@ -2,7 +2,6 @@
   "name": "marvel-clicker",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.95.3",
-    "dotenv": "^17.4.2"
+    "@supabase/supabase-js": "^2.95.3"
   }
 }

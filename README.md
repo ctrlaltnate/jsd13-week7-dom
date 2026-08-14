@@ -1,0 +1,1 @@
+# https://jsd13-week7-dom.vercel.app/ - MarvelClicker works with Supabase DB (PostgreSQL)
